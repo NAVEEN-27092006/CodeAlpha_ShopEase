@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { ShopProvider, useShop } from "@/lib/shop-store";
+import { AccountAlreadyExistsError, ShopProvider, useShop } from "@/lib/shop-store";
 
 function Wrapper({ children }: { children: ReactNode }) {
   return <ShopProvider>{children}</ShopProvider>;
@@ -68,5 +68,26 @@ describe("customer account access", () => {
         role: "catalog_manager",
       }),
     ).rejects.toThrow("does not have permission");
+  });
+
+  it("prevents a second account for the same email, ignoring letter case", async () => {
+    const { result } = renderHook(() => useShop(), { wrapper: Wrapper });
+    const details = {
+      name: "Test Customer",
+      email: "returning.customer@example.com",
+      password: "CustomerPass!2026",
+      phone: "9876543210",
+      city: "Chennai",
+      address: "1 Test Street, Chennai 600001",
+    };
+
+    await act(async () => {
+      await result.current.registerCustomer(details);
+    });
+
+    await expect(
+      result.current.registerCustomer({ ...details, email: "RETURNING.CUSTOMER@example.com" }),
+    ).rejects.toBeInstanceOf(AccountAlreadyExistsError);
+    expect(result.current.customers).toHaveLength(1);
   });
 });

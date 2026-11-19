@@ -31,6 +31,19 @@ import type {
 
 const STORAGE_KEY = "shopease-store-v3";
 
+/**
+ * Used by the sign-up screen to move a returning customer to sign-in instead
+ * of leaving them on a registration form that can never succeed. Keep this
+ * message deliberately neutral: public authentication services should not
+ * reveal whether an email address is registered.
+ */
+export class AccountAlreadyExistsError extends Error {
+  constructor() {
+    super("We could not create that account. Please sign in instead.");
+    this.name = "AccountAlreadyExistsError";
+  }
+}
+
 const ADMIN_ROLE_PERMISSIONS: Record<AdminRole, Permission[]> = {
   super_admin: [
     "admin.manage",
@@ -282,7 +295,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     async (details: CustomerRegistration): Promise<Account> => {
       const email = details.email.trim().toLowerCase();
       if (state.accounts.some((account) => account.email.toLowerCase() === email)) {
-        throw new Error("An account with this email already exists. Please sign in instead.");
+        throw new AccountAlreadyExistsError();
       }
       if (details.password.length < 10) {
         throw new Error("Use a password with at least 10 characters.");
@@ -328,7 +341,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       requirePermission(currentUser, "admin.manage");
       const email = details.email.trim().toLowerCase();
       if (state.accounts.some((account) => account.email.toLowerCase() === email)) {
-        throw new Error("An account with this email already exists.");
+        throw new AccountAlreadyExistsError();
       }
       if (details.password.length < 12) {
         throw new Error("Admin passwords must be at least 12 characters.");

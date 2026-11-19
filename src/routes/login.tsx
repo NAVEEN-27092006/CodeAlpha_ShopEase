@@ -7,7 +7,7 @@ import { Logo } from "@/components/shop/site-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useShop } from "@/lib/shop-store";
+import { AccountAlreadyExistsError, useShop } from "@/lib/shop-store";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/login")({
@@ -80,6 +80,14 @@ function LoginPage() {
       toast.success(`Welcome to ShopEase, ${account.name.split(" ")[0]}!`);
       navigate({ to: "/" });
     } catch (error) {
+      if (error instanceof AccountAlreadyExistsError && mode === "customer" && creatingAccount) {
+        setCreatingAccount(false);
+        setForm((current) => ({ ...current, password: "", confirmPassword: "" }));
+        toast.info(
+          "Please sign in to your existing account. Your email has been kept in the form.",
+        );
+        return;
+      }
       toast.error((error as Error).message);
     } finally {
       setBusy(false);
